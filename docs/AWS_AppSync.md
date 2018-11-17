@@ -7,7 +7,7 @@
 - [Sample app](#Sample-app)
 - [Security](#Security)
 - [Authorisation Use Cases](#Authorisation-Use-Cases)
-- [VTL: Resolver Mapping Templates](#VTL:-Resolver-Mapping-Templates)
+- [VTL Resolver Mapping Templates](#VTL-Resolver-Mapping-Templates)
 - [Context map](#Context-map)
 - [Troubleshooting and Common Mistakes](#Troubleshooting-and-Common-Mistakes)
 
@@ -978,7 +978,7 @@ table for the message recipient and check a) if they have notifications
 switched on, and b) if they are the actual recipient of the message before
 returning the message data.
 
-## VTL: Resolver Mapping Templates
+## VTL Resolver Mapping Templates
 
 AppSync lets you respond to GraphQL operations by enabling you to perform
 operations on your AWS resources. For each data source, a GraphQL resolver must
