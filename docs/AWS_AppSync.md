@@ -1795,7 +1795,7 @@ easier to read with the correct syntax highlighting provided by this vscode
 [this extension](https://github.com/luqimin/tinyvm).
 
 Fingerprinting is handled by the AWS CLI [package](
-https://docs.aws.amazon.com/cli/latest/reference/cloudformation/package.html) 
+https://docs.aws.amazon.com/cli/latest/reference/cloudformation/package.html)
 command, for example:
 
     aws cloudformation package \

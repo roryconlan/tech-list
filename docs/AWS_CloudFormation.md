@@ -48,5 +48,5 @@ spread the entry over multiple lines.
     DefinitionS3Location:
       Fn::Join:
       - ""
-      - - !Sub "s3://nimble-${AWS::Region}-v2stack-${Environment}-private/"
+      - - !Sub "s3://${AWS::Region}-stack-${Environment}-private/"
         - "infrastructure/stack-templates/graphql/appsync-author.gql"
