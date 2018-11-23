@@ -5,11 +5,15 @@
 - [Resources](#Resources)
 - [AppSync concepts](#AppSync-concepts)
 - [Sample app](#Sample-app)
+- [Test and Debug Resolvers](#Test-and-Debug-Resolvers)
+- [Pipeline Resolvers](#Pipeline-Resolvers)
 - [Security](#Security)
 - [Authorisation Use Cases](#Authorisation-Use-Cases)
 - [VTL Resolver Mapping Templates](#VTL-Resolver-Mapping-Templates)
 - [Context map](#Context-map)
+- [Fingerprinting AppSync files on S3](#Fingerprinting-AppSync-files-on-S3)
 - [Troubleshooting and Common Mistakes](#Troubleshooting-and-Common-Mistakes)
+- [FAQ](#FAQ)
 
 ## Resources
 
@@ -55,6 +59,11 @@
     https://docs.aws.amazon.com/appsync/latest/devguide/tutorials.html)
   - [Serverless GraphQL with AWS AppSync and Go Lambda functions](
     https://sbstjn.com/serverless-graphql-with-appsync-and-lambda.html)
+- Articles:
+  - [How developers can authenticate and authorise users with AppSync](
+    https://read.acloud.guru/authentication-and-authorization-with-aws-appsync-ccbd77658de2)
+  - [Curated list of AWS AppSync Resources](
+    https://github.com/dabit3/awesome-aws-appsync)
 
 ## AppSync concepts
 
@@ -350,6 +359,159 @@ Nice pattern:
 - GraphQL folder:
   Contains the gql part for each operation e.g. MutationCreateEvent.js wraps
   the GraphQL call in js using the graphql-tag library.
+
+## Test and Debug Resolvers
+
+See [here](
+https://docs.aws.amazon.com/appsync/latest/devguide/test-debug-resolvers.html).
+
+AppSync executes resolvers on a GraphQL field against a data source. To help
+developers write, test, and debug these resolvers, the AppSync console also
+provides tools to create a GraphQL request and response with mock data, down to
+the individual field resolver. Additionally, you can perform queries, mutations,
+and subscriptions in the AppSync console, and see a detailed log stream from
+CloudWatch of the entire request. This includes results from a data source.
+
+### Testing with Mock Data
+
+When a GraphQL resolver is invoked, it contains a context object that has
+relevant information about the request for you to program against. This includes
+arguments from a client, identity information, and data from the parent GraphQL
+field. It also has results from the data source, which can be used in the
+response template.
+
+When writing or editing a resolver function, you can pass a mock or test context
+object into the console editor. This enables you to see how both the request and
+the response templates evaluate without actually running against a data source.
+
+### Test a Resolver
+
+In the AppSync console, go to the Schema page, and choose an existing resolver
+on the right to edit it. Or, choose Attach to add a new resolver. At the top of
+the page, choose Select test context, choose Create new context, and then enter
+a name. Next, either select from an existing sample context object or populate
+the JSON manually, and then choose Save. To evaluate your resolver using this
+mocked context object, choose Run Test.
+
+For example, suppose you have an app storing a GraphQL type of Dog that uses
+automatic ID generation for objects and stores them in DynamoDB. You also want
+to write some values from the arguments of a GraphQL mutation, and allow only
+specific users to see a response. The following shows what the schema might look
+like:
+
+    type Dog {
+      breed: String
+      color: String
+    }
+
+    type Mutation {
+      addDog(firstname: String, age: Int): Dog
+    }
+
+When you add a resolver for the addDog mutation, you can populate a context
+object like the one following. The following has arguments from the client of
+name and age, and a username populated in the identity object:
+
+    {
+      "arguments" : {
+        "firstname": "Shaggy",
+        "age": 4
+      },
+      "source" : {},
+      "result" : {
+        "breed" : "Miniature Schnauzer",
+        "color" : "black_grey"
+      },
+      "identity": {
+        "sub" : "uuid",
+        "issuer" : "https://cognito-idp.region.amazonaws.com/userPoolId",
+        "username" : "Nadia",
+        "claims" : { },
+        "sourceIP" : "x.x.x.x",
+        "defaultAuthStrategy" : "ALLOW"
+      }
+    }
+
+You can test this using the following request and response mapping templates:
+
+Request Template
+
+    ## When running a resolver test in the console you can put stuff in here
+    ## to print out the contents of variables at runtime. E.g.:
+    #set($userInfo = {})
+    #set($userInfo.userName = $context.identity.username)
+    #set($userInfo.userId = $context.identity.sub)
+
+    ## Then print it out:
+    $userInfo
+
+    ## Print out other stuff to see what's going on:
+    $util.autoId()
+    $util.dynamodb.toMapValuesJson($ctx.args)
+
+    {
+      "version" : "2017-02-28",
+      "operation" : "PutItem",
+      "key" : {
+        "id" : { "S" : "$util.autoId()" }
+      },
+      "attributeValues" : $util.dynamodb.toMapValuesJson($ctx.args)
+    }
+
+Response Template
+
+    #if ($context.identity.username == "Nadia")
+      $util.toJson($ctx.result)
+    #else
+      $util.unauthorized()
+    #end
+
+The evaluated template has the data from your test context object and the
+generated value from $util.autoId(). Additionally, if you were to change the
+username to a value other than Nadia, the results won't be returned because the
+authorization check would fail.
+
+### Debugging a Live Query
+
+There's no substitute for an end-to-end test and logging to debug a production
+application. AppSync lets you log errors and full request details using
+CloudWatch. Additionally, you can use the AppSync console to test GraphQL
+queries, mutations, and subscriptions and live stream log data for each request
+back into the query editor to debug in real time. For subscriptions, the logs
+display connection-time information.
+
+To perform this, you need to have CloudWatch logs enabled in advance. Next, in
+the AppSync console, choose the Queries tab and then enter a valid GraphQL
+query. In the lower-right section, select the Logs check box to open the logs
+view. At the top of the page, choose the play arrow icon to run your GraphQL
+query. In a few moments, your full request and response logs for the operation
+are streamed to this section and you can view then in the console.
+
+## Pipeline Resolvers
+
+AppSync executes resolvers on a GraphQL field. In some cases, applications
+require executing multiple operations to resolve a single GraphQL field. With
+pipeline resolvers, developers can now compose operations (called Functions) and
+execute them in sequence. Pipeline resolvers are useful for applications that,
+for instance, require performing an authorisation check before fetching data for
+a field.
+
+### Anatomy of a pipeline resolver
+
+A pipeline resolver is composed of a Before mapping template, an After mapping
+template, and a list of Functions. Each Function has a request and response
+mapping template that it executes against a Data Source. As a pipeline resolver
+delegates execution to a list of functions, it is therefore not linked to any
+data source. Unit resolvers and functions are primitives that execute operation
+against data sources.
+
+So, your request mapping template feeds data to a function, which can feed
+another function, and so on until it finally feeds the response mapping
+template.
+
+See [here](
+https://docs.aws.amazon.com/appsync/latest/devguide/pipeline-resolvers.html)
+for more information.
 
 ## Security
 
@@ -1625,6 +1787,30 @@ You could then access these as an array, such as
 
     $context.request.headers.custom[1]
 
+## Fingerprinting AppSync files on S3
+
+AppSync resolvers and the GraphQL schema can be stored on S3. This makes the
+CloudFormation template more manageable. The .vtl resolver files will also be
+easier to read with the correct syntax highlighting provided by this vscode
+[this extension](https://github.com/luqimin/tinyvm).
+
+Fingerprinting is handled by the AWS CLI [package](
+https://docs.aws.amazon.com/cli/latest/reference/cloudformation/package.html) 
+command, for example:
+
+    aws cloudformation package \
+      --template-file ./appsync-author.yaml  \
+      --output-template-file ./appsync-author.pkg.yaml \
+      --s3-bucket mybucket \
+      --s3-prefix infrastructure/package \
+      --region eu-west-1
+
+This command packages the local artifacts (local paths) that the CloudFormation
+template references. The command uploads the local artifacts, such as resolver
+files, to an S3 bucket. The command returns a copy of the template, replacing
+references to local artifacts with the fingerprinted S3 location where the
+command uploaded the artifacts.
+
 ## Troubleshooting and Common Mistakes
 
 ### Incorrect DynamoDB Key Mapping
@@ -1726,3 +1912,41 @@ function in Node.JS with something like the following:
 
 This would throw an error as result is an object. You would need to either
 change the callback to result.data or alter your schema to not return a LIST.
+
+## FAQ
+
+- How do you programmatically test a GraphQL API on AppSync?
+
+  Testing REST and GraphQL Services With Just-API:
+
+  <https://dzone.com/articles/testing-rest-graphql-services>
+
+  You can mock the backend for your GraphQL schema locally:
+
+  <https://graphql.org/blog/mocking-with-graphql>
+
+  Although this won't help with AppSync resolvers.
+
+- How to curl an AppSync API:
+  [source](https://sbstjn.com/aws-appsync-graphql-with-cloudformation.html)
+
+      curl \
+          -XPOST https://appsync.example.com/graphql \
+          -H "Content-Type:application/graphql" \
+          -H "x-api-key:da2-nuyzhanm5bcptga6yilkj7zluy" \
+          -d '{ "query": "query { feed { title url } }" }' | jq
+
+      {
+        "data": {
+          "feed": [
+            {
+              "title": "Deploy Golang Lambda with AWS Serverless Application Model",
+              "url": "https://sbstjn.com/golang-lambda-with-aws-sam-serverless-application-model.html"
+            },
+            {
+              "title": "68% Mechanical Keyboard with 68Keys.io",
+              "url": "https://sbstjn.com/build-your-own-mechanical-keyboard.html"
+            }
+            [...]
+        }
+      }

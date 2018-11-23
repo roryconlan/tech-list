@@ -7,7 +7,9 @@
 
 ## Resources
 
-- [AWS Cogntio](https://aws.amazon.com/cognito)
+- [AWS Cognito](https://aws.amazon.com/cognito)
+- [Limits](
+  https://docs.aws.amazon.com/cognito/latest/developerguide/limits.html)
 
 ## Summary
 

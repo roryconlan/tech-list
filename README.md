@@ -10,5 +10,7 @@ I find this process helps me to absorb the information. It's nicely searchable a
 ## Contents
 
 - [AWS AppSync](./docs/AWS_AppSync.md)
+- [AWS CloudFormation](./docs/AWS_CloudFormation.md)
 - [AWS Cognito](./docs/AWS_Cognito.md)
 - [GraphQL](./docs/GraphQL.md)
+- [JSON Web Tokens](./docs/JSON_Web_Tokens.md)
