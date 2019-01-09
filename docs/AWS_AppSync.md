@@ -20,49 +20,49 @@
 - [AWS AppSync](https://aws.amazon.com/appsync)
   
   Reference documentation:
-  - [Context map](#Context-map)
-  - [Util helpers](
+    - [Context map](#Context-map)
+    - [Util helpers](
     https://docs.aws.amazon.com/appsync/latest/devguide/resolver-util-reference.html)
 
     AppSync helpers for GraphQL resolvers to simplify interactions with data sources.
-  - [DynamoDB](
+    - [DynamoDB](
     https://docs.aws.amazon.com/appsync/latest/devguide/resolver-mapping-template-reference-dynamodb.html)
 
     Use GraphQL to store and retrieve data in existing DynamoDB tables.
-  - [ElasticSearch](
+    - [ElasticSearch](
     https://docs.aws.amazon.com/appsync/latest/devguide/resolver-mapping-template-reference-elasticsearch.html)
 
     Use GraphQL to store and retrieve data in existing ElasticSearch domains.
-  - [Lambda](
+    - [Lambda](
     https://docs.aws.amazon.com/appsync/latest/devguide/resolver-mapping-template-reference-lambda.html)
 
     Resolve GraphQL requests with Lambda functions.
-  - [NONE data source](
+    - [NONE data source](
     https://docs.aws.amazon.com/appsync/latest/devguide/resolver-mapping-template-reference-none.html)
 
     Passing the output of the request template directly to the response template.
-  - [HTTP](
+    - [HTTP](
     https://docs.aws.amazon.com/appsync/latest/devguide/resolver-mapping-template-reference-http.html)
 
     The HTTP resolver mapping templates enable you to shape requests from
     AppSync to any HTTP endpoint, and responses from the endpoint back to
     AppSync.
-  - [Monitoring and Logging](
+    - [Monitoring and Logging](
     https://docs.aws.amazon.com/appsync/latest/devguide/monitoring.html)
 - [GraphQL](./GraphQL.md)
 - [Apache Velocity Template Language (VTL)](
   http://velocity.apache.org/engine/2.0/vtl-reference.html)
 - Tutorials:
-  - [Client app](
+    - [Client app](
     https://docs.aws.amazon.com/appsync/latest/devguide/building-a-client-app.html)
-  - [Data sources and Resolvers](
+    - [Data sources and Resolvers](
     https://docs.aws.amazon.com/appsync/latest/devguide/tutorials.html)
-  - [Serverless GraphQL with AWS AppSync and Go Lambda functions](
+    - [Serverless GraphQL with AWS AppSync and Go Lambda functions](
     https://sbstjn.com/serverless-graphql-with-appsync-and-lambda.html)
 - Articles:
-  - [How developers can authenticate and authorise users with AppSync](
+    - [How developers can authenticate and authorise users with AppSync](
     https://read.acloud.guru/authentication-and-authorization-with-aws-appsync-ccbd77658de2)
-  - [Curated list of AWS AppSync Resources](
+    - [Curated list of AWS AppSync Resources](
     https://github.com/dabit3/awesome-aws-appsync)
 
 ## AppSync concepts
@@ -139,17 +139,20 @@ Notes:
   The tests and mock context objects seem to be all done in the console.
   Wonder if there's a programmatic way to run them?
 - A type is specified on all the keys and attribute values. For example, you
-  set the author field to { "S" : "${context.arguments.author}" }. The S part indicates to AWS AppSync and DynamoDB that the value will be a string value.
+  set the author field to { "S" : "${context.arguments.author}" }. The S part
+  indicates to AWS AppSync and DynamoDB that the value will be a string value.
 
       "author": { "S" : "${context.arguments.author}" },
 
   Similarly, an N type is a number field.
 - AWS AppSync comes with a utility for automatic ID generation called
-  $utils.autoId() which you could have also used in the form of "id" : { "S" : "${$utils.autoId()}" }.
+  $utils.autoId() which you could have also used in the form of
+  "id" : { "S" : "${$utils.autoId()}" }.
 - A Post type need not be a flat key/value object. You can also model complex
   objects with the AWS AppSyncDynamoDB resolver, such as sets, lists, and maps.
 - In a response mapping template, if the required shape of the data in your
-  table exactly matches the shape of the Post type in GraphQL, the response mapping template can pass the results straight through:
+  table exactly matches the shape of the Post type in GraphQL, the response
+  mapping template can pass the results straight through:
 
       $utils.toJson($context.result)
 - An update of an item is significantly different from a PutItem operation.
@@ -163,33 +166,35 @@ Notes:
   word, so to update the url field we can use name placeholders and define
   them in the expressionNames field.
 
-      {
-          "version" : "2017-02-28",
-          "operation" : "UpdateItem",
-          "key" : {
-              "id" : { "S" : "${context.arguments.id}" }
+  ```json
+  {
+      "version" : "2017-02-28",
+      "operation" : "UpdateItem",
+      "key" : {
+          "id" : { "S" : "${context.arguments.id}" }
+      },
+      "update" : {
+          "expression" : "SET author = :author, title = :title, content = :content, #url = :url ADD version :one",
+          "expressionNames": {
+              "#url" : "url"
           },
-          "update" : {
-              "expression" : "SET author = :author, title = :title, content = :content, #url = :url ADD version :one",
-              "expressionNames": {
-                  "#url" : "url"
-              },
-              "expressionValues": {
-                  ":author" : { "S": "${context.arguments.author}" },
-                  ":title" : { "S": "${context.arguments.title}" },
-                  ":content" : { "S": "${context.arguments.content}" },
-                  ":url" : { "S": "${context.arguments.url}" },
-                  ":one" : { "N": 1 }
-              }
+          "expressionValues": {
+              ":author" : { "S": "${context.arguments.author}" },
+              ":title" : { "S": "${context.arguments.title}" },
+              ":content" : { "S": "${context.arguments.content}" },
+              ":url" : { "S": "${context.arguments.url}" },
+              ":one" : { "N": 1 }
           }
       }
+  }
+  ```
 
   Optimistic locking pattern:
 
   The above UpdateItem has two main problems:
-  - If you want to update just a single field, you have to update all of the
+    - If you want to update just a single field, you have to update all of the
   fields.
-  - If two people are modifying the object, you could potentially lose information.
+    - If two people are modifying the object, you could potentially lose information.
 
   AppSync solves this using the optimistic locking pattern
   [(ref.)](
@@ -238,7 +243,8 @@ Notes:
   result of the request mapping template to the response mapping template. The
   field resolution will not leave AWS AppSync.
 
-  Local resolvers are useful for several use cases. The most popular use case is to publish notifications without triggering a data source call.
+  Local resolvers are useful for several use cases. The most popular use case is
+  to publish notifications without triggering a data source call.
 
 - DynamoDB Batch Resolvers
 
@@ -246,16 +252,16 @@ Notes:
   in a single region. Supported operations are BatchGetItem, BatchPutItem, and
   BatchDeleteItem:
 
-  - Pass a list of keys in a single query and return the results from a table.
-  - Read records from one or more tables in a single query.
-  - Write records in bulk to one or more tables.
-  - Conditionally write or delete records in multiple tables that might have a
+    - Pass a list of keys in a single query and return the results from a table.
+    - Read records from one or more tables in a single query.
+    - Write records in bulk to one or more tables.
+    - Conditionally write or delete records in multiple tables that might have a
     relation
   
   Batch operations require that:
-  - The data source role must have permissions to all tables which the
+    - The data source role must have permissions to all tables which the
     resolver will access.
-  - The table specification for a resolver is part of the mapping template.
+    - The table specification for a resolver is part of the mapping template.
 
 - HTTP Resolvers
 
@@ -268,9 +274,9 @@ Notes:
   queries to GraphQL.
 
   Note:
-  - At this time only endpoints that are publicly accessible are supported by
+    - At this time only endpoints that are publicly accessible are supported by
     AppSync.
-  - If your data source is an HTTPS endpoint, the endpoint must have a server
+    - If your data source is an HTTPS endpoint, the endpoint must have a server
     certificate signed by a trusted certificate authority (CA) (self-signed
     certificates are not supported at this time). AppSync is only be able to
     talk to HTTPS endpoints that have a signed certificate from a trusted CA
@@ -487,6 +493,38 @@ view. At the top of the page, choose the play arrow icon to run your GraphQL
 query. In a few moments, your full request and response logs for the operation
 are streamed to this section and you can view then in the console.
 
+### DynamoDB resolvers
+
+You can test your resolver by running the following in the Queries pand on the
+AppSync console:
+
+    mutation MyCreateCourseMutation ($createCourseInput: CreateCourseInput!) {
+      createCourse(input: $createCourseInput) {
+        id
+        title
+      }
+    }
+
+Pre-load variables in the console "Query Variables" pane as JSON:
+
+    {
+      "createCourseInput": {
+        "title": "my new course",
+        "description":"course description"
+      }
+    }
+
+Note: If you don't see anything in the DynamoDB it's because, e.g. when sorting
+by createdAt, you are only sorting the current section of the result set. You
+can get the course by ID, by running the following query:
+
+    query getCourse {
+      getCourse(id:"baa5edc2-4859-49ce-a477-0d469d6ea3c6") {
+        id
+        title
+      }
+    }
+
 ## Pipeline Resolvers
 
 AppSync executes resolvers on a GraphQL field. In some cases, applications
@@ -522,7 +560,8 @@ See [here](https://docs.aws.amazon.com/appsync/latest/devguide/security.html).
   An API key is a hard-coded value in your application that is generated by
   the AppSync service when you create an unauthenticated GraphQL endpoint. You
   can rotate API keys from the console, from the CLI, or from the AppSync API
-  Reference. They are recommended for development purposes or use cases where it's safe to expose a public API.
+  Reference. They are recommended for development purposes or use cases wher
+  it's safe to expose a public API.
 
 - AWS_IAM Authorisation
 
@@ -695,7 +734,8 @@ is usually an attribute (column) in a DynamoDB table, such as an owner or
 list of users/groups. For example there could be Readers and Writers
 attributes.
 
-Note: For both request and response templates you can also use custom headers from clients to perform validation checks.
+Note: For both request and response templates you can also use custom headers
+from clients to perform validation checks.
 
 ### Reading Data
 
@@ -805,6 +845,7 @@ to read data. In the example below the "filter":{"expression":...} only returns
 values from a table scan if the user running the GraphQL query is listed in the
 set for PeopleCanAccess.
 
+```vtl
     {
       "version" : "2017-02-28",
       "operation" : "Scan",
@@ -820,6 +861,7 @@ set for PeopleCanAccess.
         }
       }
     }
+```
 
 #### Use Case: Group Can Read
 
@@ -927,6 +969,11 @@ This can be read in English as:
         "expressionValues": $utils.toJson($expressionValues)
       }
     }
+
+  Note, you can check out functions like attribute_not_exists in the DynamoDB
+  [documentation](
+  https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_PutItem.html)
+  for the PutItem operation.
 
 #### Use Case: Group Can Update Existing Record
 

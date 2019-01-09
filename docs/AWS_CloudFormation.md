@@ -16,6 +16,24 @@
 
 ## Cheatsheet
 
+### Convert JSON template to YAMl
+
+This can be done on the console by viewing a template in [Designer](
+https://eu-west-1.console.aws.amazon.com/cloudformation/designer) and selecting
+the appropriate radio button for either JSON or YAML.
+
+### Lists
+
+The following list notation:
+
+    DependsOn: [ RoleCodeBuild, RoleCodePipeline ]
+
+is equivalent to:
+
+    DependsOn:
+    - RoleCodeBuild
+    - RoleCodePipeline
+
 ### !Sub
 
 #### Spread a long expression over multiple lines
