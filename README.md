@@ -14,6 +14,7 @@ and I like having it all in one place.
 - [AWS CloudFormation](./docs/AWS_CloudFormation.md)
 - [AWS CodePipeline](./docs/AWS_CodePipeline.md)
 - [AWS Cognito](./docs/AWS_Cognito.md)
+- [AWS IAM](./docs/AWS_IAM.md)
 - [AWS Lambda](./docs/AWS_Lambda.md)
 - [GraphQL](./docs/GraphQL.md)
 - [JSON Web Tokens](./docs/JSON_Web_Tokens.md)
